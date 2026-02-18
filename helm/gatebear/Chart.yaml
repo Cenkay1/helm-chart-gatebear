@@ -1,0 +1,17 @@
+apiVersion: v2
+name: gatebear
+description: GateBear - Release Management Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - release-management
+  - deployment
+  - workflow
+  - approval-gates
+maintainers:
+  - name: GateBear Team
+    url: https://github.com/Cenkay1/Gatebear
+home: https://gatebear.io
+sources:
+  - https://github.com/Cenkay1/Gatebear

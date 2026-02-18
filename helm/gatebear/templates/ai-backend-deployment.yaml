@@ -1,0 +1,78 @@
+{{- if .Values.aiBackend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gatebear.aiBackend.fullname" . }}
+  labels:
+    {{- include "gatebear.aiBackend.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.aiBackend.autoscaling.enabled }}
+  replicas: {{ .Values.aiBackend.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "gatebear.aiBackend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gatebear.aiBackend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gatebear.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ai-backend
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.aiBackend.image.repository }}:{{ .Values.aiBackend.image.tag }}"
+          imagePullPolicy: {{ .Values.aiBackend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.aiBackend.service.targetPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.aiBackend.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.aiBackend.secretName }}
+          {{- if .Values.aiBackend.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.aiBackend.persistence.mountPath }}
+          {{- end }}
+          {{- if .Values.aiBackend.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.aiBackend.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.aiBackend.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.aiBackend.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.aiBackend.resources | nindent 12 }}
+      {{- if .Values.aiBackend.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "gatebear.aiBackend.fullname" . }}-data
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

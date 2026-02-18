@@ -1,0 +1,17 @@
+{{- if and .Values.aiBackend.enabled .Values.aiBackend.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "gatebear.aiBackend.fullname" . }}-data
+  labels:
+    {{- include "gatebear.aiBackend.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.aiBackend.persistence.accessMode }}
+  {{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.aiBackend.persistence.size }}
+{{- end }}

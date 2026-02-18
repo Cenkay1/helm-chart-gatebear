@@ -1,0 +1,49 @@
+🐻 GateBear has been deployed successfully!
+
+{{- if .Values.frontend.ingress.enabled }}
+{{- range .Values.frontend.ingress.hosts }}
+Access the application at: http{{ if $.Values.frontend.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+Get the application URL by running:
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "gatebear.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=frontend" -o jsonpath="{.items[0].metadata.name}")
+  kubectl port-forward $POD_NAME 3000:{{ .Values.frontend.service.targetPort }}
+
+  Then open http://localhost:3000
+{{- end }}
+
+Components deployed:
+{{- if .Values.frontend.enabled }}
+  ✓ Frontend (React)
+{{- end }}
+{{- if .Values.backend.enabled }}
+  ✓ Backend API (FastAPI)
+{{- end }}
+{{- if .Values.aiBackend.enabled }}
+  ✓ AI Backend (RAG Chatbot)
+{{- end }}
+{{- if .Values.mongodb.enabled }}
+  ✓ MongoDB
+{{- end }}
+{{- if .Values.qdrant.enabled }}
+  ✓ Qdrant Vector DB
+{{- end }}
+
+{{- if .Values.backend.enabled }}
+
+Backend API endpoint: {{ include "gatebear.backend.fullname" . }}:{{ .Values.backend.service.port }}
+{{- end }}
+
+{{- if .Values.aiBackend.enabled }}
+
+AI Backend endpoint: {{ include "gatebear.aiBackend.fullname" . }}:{{ .Values.aiBackend.service.port }}
+{{- end }}
+
+{{- if .Values.mongodb.enabled }}
+
+MongoDB connection: mongodb://{{ include "gatebear.mongodb.fullname" . }}:{{ .Values.mongodb.service.port }}
+{{- end }}
+
+For more information, visit: https://github.com/Cenkay1/Gatebear
+
+⚠️  Important: Make sure to update the secrets in values.yaml before production deployment!
