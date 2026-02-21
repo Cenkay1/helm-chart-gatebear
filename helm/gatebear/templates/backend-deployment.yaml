@@ -39,6 +39,13 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            # Auto-computed MongoDB URL from service name
+            - name: MONGODB_URL
+            {{- if .Values.mongodb.enabled }}
+              value: "mongodb://{{ include "gatebear.mongodb.fullname" . }}:{{ .Values.mongodb.service.port }}"
+            {{- else }}
+              value: {{ .Values.mongodb.external.url | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.backend.secretName }}

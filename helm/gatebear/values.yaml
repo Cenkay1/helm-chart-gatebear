@@ -17,16 +17,28 @@ global:
   affinity: {}
 
 # =============================================================================
+# LICENSE CONFIGURATION
+# =============================================================================
+license:
+  # Enterprise license key (JWT token from GateBear team)
+  # Can also be set via GATEBEAR_LICENSE_KEY environment variable
+  # Obtain a license at https://gatebear.io or contact sales
+  key: ""
+
+# =============================================================================
 # FRONTEND CONFIGURATION
 # =============================================================================
+# NOTE: React env vars (REACT_APP_*) are baked at Docker image build time.
+# To change API URLs, rebuild the image with --build-arg or use nginx env
+# substitution. The env vars below are kept for reference only.
 frontend:
   enabled: true
   replicaCount: 2
 
   image:
-    repository: gatebear/frontend
-    tag: "1.0.0"
-    pullPolicy: IfNotPresent
+    repository: gatebear/gatebear-frontend
+    tag: "latest"
+    pullPolicy: Always
 
   service:
     type: ClusterIP
@@ -62,10 +74,6 @@ frontend:
     maxReplicas: 10
     targetCPUUtilizationPercentage: 80
 
-  env:
-    REACT_APP_API_URL: "http://gatebear.example.com/api/v1"
-    REACT_APP_AI_API_URL: "http://gatebear.example.com/ai"
-
   # Health checks
   livenessProbe:
     httpGet:
@@ -88,9 +96,9 @@ backend:
   replicaCount: 2
 
   image:
-    repository: gatebear/backend
-    tag: "1.0.0"
-    pullPolicy: IfNotPresent
+    repository: gatebear/gatebear-backend
+    tag: "latest"
+    pullPolicy: Always
 
   service:
     type: ClusterIP
@@ -128,46 +136,55 @@ backend:
     DEBUG: "false"
     CORS_ORIGINS: "*"
     ACCESS_TOKEN_EXPIRE_MINUTES: "30"
-    REFRESH_TOKEN_EXPIRE_DAYS: "7"
 
   # Secrets - reference to Kubernetes secret
   secretName: gatebear-backend-secrets
   secrets:
     SECRET_KEY: "change-this-to-a-secure-secret-key"
-    MONGODB_URL: "mongodb://mongodb:27017"
-    DATABASE_NAME: "gatebear"
-    # SMTP Settings
+    # MONGODB_URL is auto-computed from mongodb service name — do NOT set here
+    DATABASE_NAME: "gatebear_db"
+    # Frontend URL for approval email links
+    FRONTEND_URL: "http://gatebear.example.com"
+    # SMTP Settings (for approval emails & notifications)
     SMTP_HOST: ""
     SMTP_PORT: "587"
     SMTP_USER: ""
     SMTP_PASSWORD: ""
-    SMTP_FROM: ""
-    SMTP_TLS: "true"
+    SMTP_FROM_EMAIL: ""
+    SMTP_FROM_NAME: "GateBear"
+    SMTP_USE_TLS: "true"
+    # Google Gemini API Key — enables the AI chatbot feature
+    # Leave empty to disable the chatbot
+    GOOGLE_API_KEY: ""
 
+  # Health check — backend root returns {"message": "Welcome to GateBEAR API"}
   livenessProbe:
     httpGet:
-      path: /health
+      path: /
       port: 8000
     initialDelaySeconds: 30
     periodSeconds: 10
   readinessProbe:
     httpGet:
-      path: /health
+      path: /
       port: 8000
     initialDelaySeconds: 5
     periodSeconds: 5
 
 # =============================================================================
-# AI BACKEND CONFIGURATION (RAG Chatbot)
+# AI BACKEND CONFIGURATION (Separate RAG Microservice — Optional)
 # =============================================================================
+# This is a SEPARATE AI microservice. The main backend already has built-in
+# AI chatbot (controlled by GOOGLE_API_KEY above). Only enable this if you
+# need the standalone AI service. Requires Qdrant vector database.
 aiBackend:
-  enabled: true
+  enabled: false
   replicaCount: 1
 
   image:
-    repository: gatebear/ai-backend
-    tag: "1.0.0"
-    pullPolicy: IfNotPresent
+    repository: gatebear/gatebear-ai
+    tag: "latest"
+    pullPolicy: Always
 
   service:
     type: ClusterIP
@@ -276,10 +293,12 @@ mongodb:
     replicaSetName: ""
 
 # =============================================================================
-# QDRANT VECTOR DATABASE (for AI)
+# QDRANT VECTOR DATABASE (Required only when aiBackend is enabled)
 # =============================================================================
+# Note: The main backend's built-in chatbot uses an embedded local Qdrant,
+# so this service is only needed for the separate AI backend microservice.
 qdrant:
-  enabled: true
+  enabled: false
 
   image:
     repository: qdrant/qdrant

@@ -34,11 +34,6 @@ spec:
             - name: http
               containerPort: {{ .Values.frontend.service.targetPort }}
               protocol: TCP
-          env:
-            {{- range $key, $value := .Values.frontend.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
           {{- if .Values.frontend.livenessProbe }}
           livenessProbe:
             {{- toYaml .Values.frontend.livenessProbe | nindent 12 }}
